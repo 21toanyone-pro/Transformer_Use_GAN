@@ -7,7 +7,7 @@ from torch.cuda.amp.autocast_mode import autocast
 from torch.nn.modules.activation import MultiheadAttention
 from einops import repeat
 from einops.layers.torch import Rearrange
-
+import functools
 # Import custom modules
 from layer import TransformerDecoderLayer, TransformerEncoderLayer, Decoder
 from embedding import PatchEmbedding, MultiHeadAttention, PatchEmbedding_style
@@ -212,34 +212,53 @@ class Generators(nn.Module):
 
         return decoder_out
 
+
+
     def generate_square_subsequent_mask(self, sz, device):
         mask = torch.tril(torch.ones(sz, sz, dtype=torch.float, device=device))
         mask = mask.masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, 0.0)
         return mask
 
 class Discriminator(nn.Module):
-    def __init__(self, use_bias=False):
-        super().__init__()
-        self.model = nn.Sequential(
-            # initial conv layer, no instance normalization
-            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.2, True),
+    """Defines a PatchGAN discriminator"""
 
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=use_bias),
-            nn.InstanceNorm2d(128),
-            nn.LeakyReLU(0.2, True),
+    def __init__(self, input_nc, ndf=64, n_layers=3, norm_layer=nn.BatchNorm2d):
+        """Construct a PatchGAN discriminator
+        Parameters:
+            input_nc (int)  -- the number of channels in input images
+            ndf (int)       -- the number of filters in the last conv layer
+            n_layers (int)  -- the number of conv layers in the discriminator
+            norm_layer      -- normalization layer
+        """
+        super(Discriminator, self).__init__()
+        if type(norm_layer) == functools.partial:  # no need to use bias as BatchNorm2d has affine parameters
+            use_bias = norm_layer.func == nn.InstanceNorm2d
+        else:
+            use_bias = norm_layer == nn.InstanceNorm2d
+        kw = 4
+        padw = 1
+        sequence = [nn.Conv2d(input_nc, ndf, kernel_size=kw, stride=2, padding=padw), nn.LeakyReLU(0.2, True)]
+        nf_mult = 1
+        nf_mult_prev = 1
+        for n in range(1, n_layers):  # gradually increase the number of filters
+            nf_mult_prev = nf_mult
+            nf_mult = min(2 ** n, 8)
+            sequence += [
+                        nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=2, padding=padw, bias=use_bias),
+                        norm_layer(ndf * nf_mult),
+                        nn.LeakyReLU(0.2, True)
+                        ]
+        nf_mult_prev = nf_mult
+        nf_mult = min(2 ** n_layers, 8)
+        sequence += [
+                    nn.Conv2d(ndf * nf_mult_prev, ndf * nf_mult, kernel_size=kw, stride=1, padding=padw, bias=use_bias),
+                    norm_layer(ndf * nf_mult),
+                    nn.LeakyReLU(0.2, True)
+                    ]
+        sequence += [nn.Conv2d(ndf * nf_mult, 1, kernel_size=kw, stride=1, padding=padw)]
+        self.model = nn.Sequential(*sequence)
 
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=use_bias),
-            nn.InstanceNorm2d(256),
-            nn.LeakyReLU(0.2, True),
-
-            nn.Conv2d(256, 512, kernel_size=4, stride=1, padding=1, bias=use_bias),
-            nn.InstanceNorm2d(512),
-            nn.LeakyReLU(0.2, True),
-
-            nn.Conv2d(512, 1, kernel_size=4, stride=1, padding=1)
-            # sigmoid is not necessary
-        )
     def forward(self, input):
+        """Standard forward."""
         return self.model(input)
  

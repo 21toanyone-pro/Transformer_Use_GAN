@@ -15,6 +15,7 @@ from PIL import Image
 import itertools
 from tqdm import tqdm
 import option
+import model
 from dataset import ImageDataset
 import os
 import gc
@@ -37,6 +38,8 @@ from gan_model import STGAN
 import torchvision.models as models
 from torchvision.utils import save_image
 
+#from "https://github.com/ligoudaner377/font_translator_gan -train.py"
+
 if __name__ =='__main__':
     opt = option.opt
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -47,76 +50,76 @@ if __name__ =='__main__':
 
     dataloader = DataLoader(ImageDataset(opt.dataroot, transforms_=transforms_, unaligned=True), 
                         batch_size=opt.batch_size, shuffle=True, num_workers=0)
+    #dataset = ImageDataset(opt.dataroot, transforms_=transforms_, unaligned=True)
 
-    vgg = models.vgg19(pretrained=True).features
-    vgg_encoder = Net(vgg)
-    vgg_encoder = vgg_encoder.to(device)
+    #vgg = models.vgg19(pretrained=True).features
+    #vgg_encoder = Net(vgg)
+    #vgg_encoder = vgg_encoder.to(device)
 
 
     # 1) network
-    netG = Generators(d_model=opt.d_model, d_embedding=opt.d_embedding, 
-                               n_head=opt.n_head, dim_feedforward=opt.dim_feedforward, img_size=opt.img_size, 
-                               patch_size=opt.patch_size, 
-                               num_encoder_layer=opt.num_encoder_layer, num_decoder_layer=opt.num_decoder_layer,
-                               dropout=opt.dropout)
-    netD = Discriminator()
-    netG.cuda()
-    netD.cuda()
-    netG.apply(weights_init)
-    netD.apply(weights_init)
+    #netG = Generators(d_model=opt.d_model, d_embedding=opt.d_embedding, 
+                               #n_head=opt.n_head, dim_feedforward=opt.dim_feedforward, img_size=opt.img_size, 
+                               #patch_size=opt.patch_size, 
+                               #num_encoder_layer=opt.num_encoder_layer, num_decoder_layer=opt.num_decoder_layer,
+                               #dropout=opt.dropout)
+    #netD = Discriminator()
+    #netG.cuda()
+    #netD.cuda()
+    #netG.apply(weights_init)
+    #netD.apply(weights_init)
     # netD = netD.to(device)
     # netG = netG.to(device)
 
     # 2) weights initialize
     
     # 3)define loss
-    gloss = nn.MSELoss().to(device)
+
+        
+    #gloss = nn.MSELoss().to(device)
+
+        #hinge adversarial loss 
+
+   
+
+        #style loss
+
+    #style_loss = torch.nn.CrossEntropy()
+
+        #content loss
+    #content_loss = torch.nn.L1Loss()
+        
+    
 
 
     # optimizer & LR schedulers
-    g_optim = torch.optim.Adam(netG.parameters(), lr= 0.0005,betas=(opt.beta1, 0.999))
-    d_optim = torch.optim.Adam(netD.parameters(), lr= 0.0005,betas=(opt.beta1, 0.999))
+    #g_optim = torch.optim.Adam(netG.parameters(), lr= 0.0005,betas=(opt.beta1, 0.999))
+    #d_optim = torch.optim.Adam(netD.parameters(), lr= 0.0005,betas=(opt.beta1, 0.999))
     #lr_scheduler_D_B = torch.optim.lr_scheduler.LambdaLR(gen_optimizer, lr_lambda=LambdaLR(opt.n_epochs, opt.epoch, opt.decay_epoch).step)
     
-    Tensor = torch.cuda.FloatTensor
-    target_real = Tensor(opt.batch_size).fill_(1.0) # label for a real image
-    target_fake = Tensor(opt.batch_size).fill_(0.0) # label for a fake image
+    #Tensor = torch.cuda.FloatTensor
+    
+    model = STGAN()
 
+    model.create_model(opt, device)
 
-    # Input, output setting`
+    # Input, output setting'
+
     for epoch in range(0, opt.n_epochs):
-        netG.train()
 
 
-        for i, img in enumerate(dataloader):
+        for i, data in enumerate(dataloader):
 
-            img_s, img_c = STGAN.set_input(img, device)
-
-            g_optim.zero_grad()
+            model.set_input(data, device)
+            model.optimize_parameters()
+            model.show_visuals(epoch, i, opt.n_epochs)
             
-            d_optim.zero_grad()
-
-            gen_data = netG(img_c, img_s)
-            save_image(gen_data, f'./checkpoint/gen_data/{epoch}_cc.jpg', nrow=4, normalize=True, scale_each=True)
-            pred_fake_g = netD(gen_data)
-            gen_loss = gloss(pred_fake_g,1) # 생성된 이미지랑 스타일 이미지랑 비교
-            gen_loss.backward()
-            g_optim.step()
-
-            pred_real = netD(img_s)
-            loss_D_real = gloss(pred_real, target_real)
-
-            pred_fake = netD(gen_data.detach()) 
-            loss_D_fake = gloss(pred_fake, target_fake)
-
-            d_loss = (loss_D_real + loss_D_fake) *0.5
-            d_loss.backward()
-            d_optim.step()
+            
             
             
             
             #L_id = F.mse_loss(cc_data, img_c)+F.mse_loss(ss_data, img_s)
-            #loss_cc,loss_ss = vgg_encoder(img_c, img_s, gen_data)
+            #loss_cc,loss_ss = vgg_encoder(img_c, img_s, gen_data)  
             #loss_c, loss_s, loss_cc = vgg_encoder(img_c, img_s, gen_data, ss_data, cc_data)
             
             # loss_c = loss_c.mean()
@@ -127,4 +130,4 @@ if __name__ =='__main__':
             #loss_style = 10*loss_c + 7*loss_s + 50*L_id + 1*loss_cc
 
             
-        print("[Epoch %d/%d] [Batch %d/%d] [g loss: %f][d loss: %f]" %(epoch, opt.n_epochs, i % len(dataloader), len(dataloader), (gen_loss),(d_loss)))
+       

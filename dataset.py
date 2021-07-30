@@ -27,7 +27,7 @@ class ImageDataset(Dataset):
             item_B = self.transform(Image.open(self.files_B[random.randint(0, len(self.files_B)-1)]))
         else:
             item_B = self.transform(Image.open(self.files_B[index % len(self.files_B)]))
-        return {'A': item_A, 'B':item_B}
+        return {'A': item_A, 'B':item_B, 'gt': item_A}
 
     def __len__(self):
         return max(len(self.files_A), len(self.files_B))

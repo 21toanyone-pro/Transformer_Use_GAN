@@ -24,7 +24,7 @@ class PatchEmbedding(nn.Module): # content embedding
         self.patch_size = patch_size
 
         self.projection= nn.Sequential(Rearrange('b c (h s1) (w s2) -> b (h w) (s1 s2 c)', s1=patch_size, s2 = patch_size),
-                    nn.Linear(patch_size * patch_size * in_channels, d_model))
+                    nn.Linear(patch_size * patch_size * in_channels, d_model)).cuda()
         # Patch projection & parameter setting
         # 이미지를 패치사이즈로 flatten
         # self.projection = nn.Sequential(
@@ -32,10 +32,10 @@ class PatchEmbedding(nn.Module): # content embedding
         #     Rearrange('b e (h) (w) -> b (h w) e')
         # )
 
-        self.positions = nn.Parameter(torch.randn((img_size // patch_size)**2, d_model))
+        self.positions = nn.Parameter(torch.randn((img_size // patch_size)**2, d_model)).cuda()
         #self.positions = positionalEncoding2D(d_model, img_size)
 
-    @autocast()
+    #@autocast()
     def forward(self, x: Tensor) -> Tensor:
         #b,_, _,_= x.shape
         # prepare settings
@@ -60,7 +60,7 @@ class PatchEmbedding_style(nn.Module): # style embedding
         self.patch_size = patch_size
 
         self.projection= nn.Sequential(Rearrange('b c (h s1) (w s2) -> b (h w) (s1 s2 c)', s1=patch_size, s2 = patch_size),
-                    nn.Linear(patch_size * patch_size * in_channels, d_model))
+                    nn.Linear(patch_size * patch_size * in_channels, d_model)).cuda()
         # Patch projection & parameter setting
         # 이미지를 패치사이즈로 flatten
         # self.projection = nn.Sequential(
