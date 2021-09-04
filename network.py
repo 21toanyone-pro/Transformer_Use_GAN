@@ -151,14 +151,11 @@ class Generators(nn.Module):
         self.c_patch_embedding = PatchEmbedding(in_channels=3, patch_size=patch_size,
             d_model=d_model, img_size=img_size)
 
-        
-
+    
         # Image embedding part(style)
         self.s_patch_embedding = PatchEmbedding_style(in_channels=3, patch_size=patch_size,
             d_model=d_model, img_size=img_size)
         
-
-
 
         # Transformer Encoder part # d_model = 512, dim_feed =512
         self_attn = MultiheadAttention(d_model, n_head, dropout=dropout)
@@ -176,7 +173,6 @@ class Generators(nn.Module):
             TransformerDecoderLayer(d_model, self_attn, decoder_mask_attn,
                 dim_feedforward, dropout=dropout) for i in range(num_decoder_layer)])
 
-
         self.CNN_Decoder = Decoder()
 
         # Initialization
@@ -186,9 +182,9 @@ class Generators(nn.Module):
 
     def forward(self, content_img: Tensor, style_img: Tensor) -> Tensor:
 
-        # Image embedding
+        # Image _style
         S_encoder_out = self.s_patch_embedding(style_img).transpose(0, 1)
-
+        ## Image _content
         C_encoder_out = self.c_patch_embedding(content_img).transpose(0, 1)
 
         # Image embedding
@@ -217,7 +213,7 @@ class Generators(nn.Module):
         mask = mask.masked_fill(mask == 0, float('-inf')).masked_fill(mask == 1, 0.0)
         return mask
 
-class Discriminator(nn.Module):
+class Discriminator(nn.Module): #  patch gan
     def __init__(self, use_bias=False):
         super().__init__()
         self.model = nn.Sequential(
