@@ -5,10 +5,8 @@
 
 Generator를 트랜스포머로 대체, Transformer Encoder와 Decoder 모두 사용.
 
-<pre>
-<code>
-train.py
-</code>
-</pre>
+
+ train.py
+
 
 
