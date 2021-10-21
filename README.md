@@ -10,9 +10,8 @@
 ## Install dependencis
 * PyTorch>=0.4.1
 * torchvision>=0.2.1
-* opencv-python>=3.4.2
-* PIL
-* natsort
+* opencv-python>=4.5.4
+
 
 ## Used
 
