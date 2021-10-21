@@ -4,6 +4,18 @@
 - GAN 구조 사용
 - Generator를 트랜스포머로 대체, Transformer Encoder와 Decoder 모두 사용.
 
+
+# Getting started
+
+## Install dependencis
+* PyTorch>=0.4.1
+* torchvision>=0.2.1
+* opencv-python>=3.4.2
+* PIL
+* natsort
+
+## Used
+
 ### Train
 
     train.py
